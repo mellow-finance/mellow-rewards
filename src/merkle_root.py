@@ -62,13 +62,14 @@ def convert_to_str(value: HexBytes) -> str:
 
 
 if __name__ == "__main__":
-    users = []
-    balances = []
     label = "LSK_first_batch"
     reward_token = "0xac485391EB2d7D88253a7F1eF18C37f4242D1A24"
+    path = f"{label}_external_collector"
 
-    for file_name in os.listdir(f"{label}_external_collector"):
-        with open(f"{label}_external_collector/{file_name}", "r") as f:
+    for file_name in os.listdir(path):
+        users = []
+        balances = []
+        with open(f"{path}/{file_name}", "r") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 users.append(row["user"])
