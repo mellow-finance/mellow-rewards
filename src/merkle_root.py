@@ -51,6 +51,16 @@ def generate_merkle_tree(users: List[str], balances: List[int], reward_token: st
     return root, proofs
 
 
+def convert_to_str(value: HexBytes) -> str:
+    if type(value) == HexBytes:
+        result = value.hex()
+        if not result.startswith("0x"):
+            result = "0x" + result
+        return result
+    else:
+        return str(result)
+
+
 if __name__ == "__main__":
     users = []
     balances = []
@@ -66,7 +76,7 @@ if __name__ == "__main__":
 
         merkle_root, proofs = generate_merkle_tree(users, balances, reward_token)
         data = {
-            "root": merkle_root.hex(),
+            "root": convert_to_str(merkle_root),
             "users": [],
         }
 
@@ -75,10 +85,12 @@ if __name__ == "__main__":
                 "address": users[i],
                 "reward": reward_token,
                 "amount": str(balances[i]),
-                "proof": [x.hex() for x in proofs[i]],
+                "proof": [convert_to_str(x) for x in proofs[i]],
             }
             data["users"].append(user_data)
 
         os.makedirs(f"{label}_merkle_proofs", exist_ok=True)
-        with open(f"{label}_merkle_proofs/{file_name.replace('.csv', '.json')}", "w") as f:
+        with open(
+            f"{label}_merkle_proofs/{file_name.replace('.csv', '.json')}", "w"
+        ) as f:
             json.dump(data, f, indent=4)
