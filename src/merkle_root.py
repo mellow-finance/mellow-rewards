@@ -78,17 +78,16 @@ if __name__ == "__main__":
         merkle_root, proofs = generate_merkle_tree(users, balances, reward_token)
         data = {
             "root": convert_to_str(merkle_root),
-            "users": [],
+            "users": [
+                {
+                    "address": users[i],
+                    "reward": reward_token,
+                    "amount": str(balances[i]),
+                    "proof": [convert_to_str(x) for x in proofs[i]],
+                }
+                for i in range(len(users))
+            ],
         }
-
-        for i in range(len(users)):
-            user_data = {
-                "address": users[i],
-                "reward": reward_token,
-                "amount": str(balances[i]),
-                "proof": [convert_to_str(x) for x in proofs[i]],
-            }
-            data["users"].append(user_data)
 
         os.makedirs(f"{label}_merkle_proofs", exist_ok=True)
         with open(
