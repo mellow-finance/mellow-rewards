@@ -1,7 +1,7 @@
 import csv
 import os
 
-label = 'LSK_first_batch'
+label = 'distributions/lisk/LSK_first_batch'
 
 for file_name in os.listdir(label):
     rewards = {}

@@ -1,5 +1,6 @@
-from common import *
+from utils.common import *
 
+_CACHE_PATH = './src/services/velodrome_v3_cached_positions.csv'
 
 class VelodromeV3Service(DeFiService):
     def __init__(
@@ -233,7 +234,8 @@ def load_all_positions(
     w3: Web3, cache: Dict[int, int], from_block: int, to_block: int
 ) -> Dict[int, Any]:
     positions = {}
-    with open("./src/velodrome_v3_cached_positions.csv", "r") as f:
+
+    with open(_CACHE_PATH, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             positions[int(row["tokenId"])] = row
@@ -313,7 +315,7 @@ def load_all_positions(
                     "tickSpacing": 0,
                 }
 
-    with open("./src/velodrome_v3_cached_positions.csv", "w") as f:
+    with open(_CACHE_PATH, "w") as f:
         writer = csv.writer(f)
         writer.writerow(["tokenId", "token0", "token1", "tickSpacing"])
         for position in positions.values():
@@ -380,10 +382,3 @@ def create_velodrome_v3_service(
         positions[token_id]["transfers"] = ownership_transfers
     block_numbers = sorted(list(set(block_numbers)))
     return VelodromeV3Service(w3, vault, pool, positions, block_numbers)
-
-
-if __name__ == "__main__":
-    vault = "0x1b10E2270780858923cdBbC9B5423e29fffD1A44"
-    pool = "0x9788ABD076014dE9c04A2283c709BfF7778a6cF1"
-    gauge = "0xcf3c93f6FAb70b39F862ceD14A7c84e6aE319328"
-    create_velodrome_v3_service(w3, vault, pool, gauge, 17757258, 19275205)

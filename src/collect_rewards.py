@@ -1,14 +1,14 @@
-from common import *
+from utils.common import *
 
-from velodrome_v2_service import create_velodrome_v2_service
-from velodrome_v3_service import create_velodrome_v3_service
+from services.velodrome_v2_service import create_velodrome_v2_service
+from services.velodrome_v3_service import create_velodrome_v3_service
+from services import constants
 
 
 def calculate_rewards(
     vault: str,
     withdrawal_queue: str,
-    velodrome_v2_pools: List[str],
-    velodrome_v3_pools: List[Tuple[str, str]],
+    service_init_params: List[Tuple[str, List[Any]]],
     from_block: int,
     to_block: int,
     reward_amount: int,
@@ -33,13 +33,16 @@ def calculate_rewards(
         key=lambda x: x["block_number"],
     )
 
+    service_mapping = {
+        constants.VELODROME_V2: create_velodrome_v2_service,
+        constants.VELODROME_V3: create_velodrome_v3_service,
+        constants.MORPHO: None,
+    }
+
+    print("Creating services...")
     services: List[DeFiService] = []
-    print("Creating Velodrome V2 services...")
-    for pool in velodrome_v2_pools:
-        services.append(create_velodrome_v2_service(w3, vault, pool))
-    print("Creating Velodrome V3 services...")
-    for pool, gauge in velodrome_v3_pools:
-        services.append(create_velodrome_v3_service(w3, vault, pool, gauge, to_block))
+    for service_type, service_data in service_init_params:
+        services.append(service_mapping[service_type](w3, vault, *service_data))
 
     cumulative_balances = {}
     user_balances = {}
@@ -132,17 +135,21 @@ if __name__ == "__main__":
     from_block = 19275205
     to_block = 19577604
 
-    label = 'LSK_second_batch'
+    label = "./distributions/lisk/LSK_second_batch"
 
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
         "0x5E3584d67b86f0C77FB43073A1238a943CA26188",
-        ["0xDcb60949A0cCFc813A0D8dF8e8Ebcac097a1A9d1"],
         [
+            (constants.VELODROME_V2, ["0xDcb60949A0cCFc813A0D8dF8e8Ebcac097a1A9d1"]),
             (
-                "0x9788ABD076014dE9c04A2283c709BfF7778a6cF1",
-                "0xcf3c93f6FAb70b39F862ceD14A7c84e6aE319328",
-            )
+                constants.VELODROME_V3,
+                [
+                    "0x9788ABD076014dE9c04A2283c709BfF7778a6cF1",
+                    "0xcf3c93f6FAb70b39F862ceD14A7c84e6aE319328",
+                    to_block,
+                ],
+            ),
         ],
         from_block,
         to_block,
@@ -153,12 +160,16 @@ if __name__ == "__main__":
     calculate_rewards(
         "0xa67E8B2E43B70D98E1896D3f9d563f3ABdB8Adcd",
         "0x8294c6B7ed0dEf4Bcf0c1a34c9A09Fe0880D8A13",
-        ["0x7d8a904165ee7D6DcD70d2680D713C2984473B45"],
         [
+            (constants.VELODROME_V2, ["0x7d8a904165ee7D6DcD70d2680D713C2984473B45"]),
             (
-                "0x9665Df2b69163411D9b089F6C192F8CeB579FB57",
-                "0x7a0CA233A1599a1b1d23563326a4C560Ef1f4B33",
-            )
+                constants.VELODROME_V3,
+                [
+                    "0x9665Df2b69163411D9b089F6C192F8CeB579FB57",
+                    "0x7a0CA233A1599a1b1d23563326a4C560Ef1f4B33",
+                    to_block,
+                ],
+            ),
         ],
         from_block,
         to_block,
@@ -169,12 +180,15 @@ if __name__ == "__main__":
     calculate_rewards(
         "0x8cf94b5A37b1835D634b7a3e6b1EE02Ce7F0CD30",
         "0x025e059BCea0eAdBb58b16db7D2e5748736F6511",
-        [],
         [
             (
-                "0xFF457eFE9A906CB4af830C22c2B36f15a9a77619",
-                "0xD3AD131b12699c464dFD461a5FcE225F2C2e410b",
-            )
+                constants.VELODROME_V3,
+                [
+                    "0xFF457eFE9A906CB4af830C22c2B36f15a9a77619",
+                    "0xD3AD131b12699c464dFD461a5FcE225F2C2e410b",
+                    to_block,
+                ],
+            ),
         ],
         from_block,
         to_block,

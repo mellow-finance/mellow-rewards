@@ -62,7 +62,7 @@ def convert_to_str(value: HexBytes) -> str:
 
 
 if __name__ == "__main__":
-    label = "LSK_first_batch"
+    label = "./distributions/lisk/LSK_first_batch"
     reward_token = "0xac485391EB2d7D88253a7F1eF18C37f4242D1A24"
     path = f"{label}_external_collector"
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         merkle_root, proofs = generate_merkle_tree(users, balances, reward_token)
         data = {
             "root": convert_to_str(merkle_root),
-            "users": [
+            "data": [
                 {
                     "address": users[i],
                     "reward": reward_token,
@@ -93,4 +93,4 @@ if __name__ == "__main__":
         with open(
             f"{label}_merkle_proofs/{file_name.replace('.csv', '.json')}", "w"
         ) as f:
-            json.dump(data, f, indent=4)
+            json.dump(data, f, indent=2)
