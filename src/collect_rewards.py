@@ -129,8 +129,10 @@ def calculate_rewards(
 
 
 if __name__ == "__main__":
-    from_block = 18972805
-    to_block = 19275204
+    from_block = 19275205
+    to_block = 19577604
+
+    label = 'LSK_second_batch'
 
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
@@ -145,7 +147,7 @@ if __name__ == "__main__":
         from_block,
         to_block,
         4000,
-        "LSK_first_batch",
+        label,
     )
 
     calculate_rewards(
@@ -161,7 +163,7 @@ if __name__ == "__main__":
         from_block,
         to_block,
         8000,
-        "LSK_first_batch",
+        label,
     )
 
     calculate_rewards(
@@ -177,5 +179,5 @@ if __name__ == "__main__":
         from_block,
         to_block,
         500,
-        "LSK_first_batch",
+        label,
     )
