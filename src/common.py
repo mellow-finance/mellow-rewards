@@ -144,6 +144,7 @@ def call_blockscout_api(url: str) -> List[Any]:
         for key, value in pagination.items():
             full_url += separator + key + "=" + str(value)
             separator = "&"
+        response = None
         while True:
             try:
                 response = requests.get(
@@ -152,7 +153,8 @@ def call_blockscout_api(url: str) -> List[Any]:
                 full_response.extend(response["items"])
                 pagination = response["next_page_params"]
                 break
-            except:
+            except Exception as e:
+                print(e)
                 print(full_url, response)
                 time.sleep(1)
         if not pagination:
