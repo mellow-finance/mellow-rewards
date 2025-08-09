@@ -2,6 +2,7 @@ from utils.common import *
 
 from services.velodrome_v2_service import create_velodrome_v2_service
 from services.velodrome_v3_service import create_velodrome_v3_service
+from services.morpho_service import create_morpho_service
 from services import constants
 
 
@@ -132,6 +133,18 @@ def calculate_rewards(
 
 
 if __name__ == "__main__":
+
+    if True:
+        
+        from_block = 19275205
+        to_block = 19577604
+        MORPHO = "0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8"
+        create_morpho_service(
+            None, "0x8cf94b5A37b1835D634b7a3e6b1EE02Ce7F0CD30", MORPHO,
+            from_block,
+            to_block
+        )
+        exit(0)
     from_block = 19275205
     to_block = 19577604
 

@@ -116,7 +116,7 @@ VELO_V2_POOL_ABI = [
 ]
 
 load_dotenv()
-RPC_URL = os.getenv('LISK_RPC')
+RPC_URL = os.getenv("LISK_RPC")
 MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"
 VELO_V3_POSITION_MANAGER = "0x991d5546C4B442B4c5fdc4c8B8b8d131DEB24702"
 SUGAR_ADDRESS = "0xB98fB4C9C99dE155cCbF5A14af0dBBAd96033D6f"
@@ -135,14 +135,14 @@ class DeFiService:
         pass
 
 
-def call_blockscout_api(url: str) -> List[Any]:
+def call_blockscout_api(url: str, params: Dict[str, Any] = {}) -> List[Any]:
     pagination = {}
     full_response = []
     while True:
         full_url = url
         separator = "?"
-        for key, value in pagination.items():
-            full_url += separator + key + "=" + str(value)
+        for key, value in list(params.items()) + list(pagination.items()):
+            full_url += separator + key + "=" + str('null' if value is None else value)
             separator = "&"
         response = None
         while True:
@@ -159,6 +159,7 @@ def call_blockscout_api(url: str) -> List[Any]:
                 time.sleep(1)
         if not pagination:
             break
+
     return full_response[::-1]
 
 

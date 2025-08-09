@@ -1,7 +1,7 @@
 import csv
 import os
 
-label = 'distributions/lisk/LSK_first_batch'
+label = 'distributions/lisk/LSK_second_batch'
 
 for file_name in os.listdir(label):
     rewards = {}
@@ -12,7 +12,7 @@ for file_name in os.listdir(label):
             reward = row["reward"]
             if user in rewards:
                 print(f"Invalid user address! file={file_name} user={user}")
-                exit(0)
+                # exit(0)
             rewards[user] = reward
 
     with open(f"./{label}_external_collector/{file_name}", "r") as f:
