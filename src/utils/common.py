@@ -135,14 +135,16 @@ class DeFiService:
         pass
 
 
-def call_blockscout_api(url: str, params: Dict[str, Any] = {}) -> List[Any]:
+def call_blockscout_api(
+    url: str, params: Dict[str, Any] = {}, limit_function={}, is_multiple=True
+) -> List[Any]:
     pagination = {}
     full_response = []
     while True:
         full_url = url
         separator = "?"
         for key, value in list(params.items()) + list(pagination.items()):
-            full_url += separator + key + "=" + str('null' if value is None else value)
+            full_url += separator + key + "=" + str("null" if value is None else value)
             separator = "&"
         response = None
         while True:
@@ -150,6 +152,10 @@ def call_blockscout_api(url: str, params: Dict[str, Any] = {}) -> List[Any]:
                 response = requests.get(
                     full_url, headers={"accept": "application/json"}
                 ).json()
+                if not is_multiple:
+                    return response
+                if limit_function and limit_function(response["items"]):
+                    return full_response
                 full_response.extend(response["items"])
                 pagination = response["next_page_params"]
                 break

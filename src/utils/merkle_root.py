@@ -62,18 +62,39 @@ def convert_to_str(value: HexBytes) -> str:
 
 
 if __name__ == "__main__":
-    label = "./distributions/lisk/LSK_first_batch"
+    labels = [
+        "./distributions/lisk/LSK_first_batch",
+        "./distributions/lisk/LSK_second_batch",
+    ]
+    merkle_tree_label = labels[-1]
+    files = [
+        "0x1b10E2270780858923cdBbC9B5423e29fffD1A44.csv",
+        "0x8cf94b5A37b1835D634b7a3e6b1EE02Ce7F0CD30.csv",
+        "0xa67E8B2E43B70D98E1896D3f9d563f3ABdB8Adcd.csv",
+    ]
     reward_token = "0xac485391EB2d7D88253a7F1eF18C37f4242D1A24"
-    path = f"{label}_external_collector"
 
-    for file_name in os.listdir(path):
+    for file_name in files:
+        data = {}
+        for label in labels:
+            path = f"{label}_external_collector"
+            with open(f"{path}/{file_name}", "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    user = row["user"]
+                    balance = int(row["reward"])
+                    if user not in data:
+                        data[user] = 0
+                    data[user] += balance
+        sorted_balances = sorted(
+            [(balance, user) for user, balance in data.items()], reverse=True
+        )
         users = []
         balances = []
-        with open(f"{path}/{file_name}", "r") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                users.append(row["user"])
-                balances.append(int(row["reward"]))
+        for i in range(len(sorted_balances)):
+            balance, user = sorted_balances[i]
+            users.append(user)
+            balances.append(balance)
 
         merkle_root, proofs = generate_merkle_tree(users, balances, reward_token)
         data = {
@@ -89,8 +110,9 @@ if __name__ == "__main__":
             ],
         }
 
-        os.makedirs(f"{label}_merkle_proofs", exist_ok=True)
+        os.makedirs(f"{merkle_tree_label}_merkle_proofs", exist_ok=True)
         with open(
-            f"{label}_merkle_proofs/{file_name.replace('.csv', '.json')}", "w"
+            f"{merkle_tree_label}_merkle_proofs/{file_name.replace('.csv', '.json')}",
+            "w",
         ) as f:
             json.dump(data, f, indent=2)

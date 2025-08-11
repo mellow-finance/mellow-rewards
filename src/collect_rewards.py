@@ -37,7 +37,7 @@ def calculate_rewards(
     service_mapping = {
         constants.VELODROME_V2: create_velodrome_v2_service,
         constants.VELODROME_V3: create_velodrome_v3_service,
-        constants.MORPHO: None,
+        constants.MORPHO: create_morpho_service,
     }
 
     print("Creating services...")
@@ -133,23 +133,10 @@ def calculate_rewards(
 
 
 if __name__ == "__main__":
-
-    if True:
-        
-        from_block = 19275205
-        to_block = 19577604
-        MORPHO = "0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8"
-        create_morpho_service(
-            None, "0x8cf94b5A37b1835D634b7a3e6b1EE02Ce7F0CD30", MORPHO,
-            from_block,
-            to_block
-        )
-        exit(0)
     from_block = 19275205
     to_block = 19577604
 
     label = "./distributions/lisk/LSK_second_batch"
-
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
         "0x5E3584d67b86f0C77FB43073A1238a943CA26188",
@@ -202,6 +189,8 @@ if __name__ == "__main__":
                     to_block,
                 ],
             ),
+            (constants.MORPHO, ["0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8",
+                                from_block, to_block]),
         ],
         from_block,
         to_block,
