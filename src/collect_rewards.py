@@ -136,7 +136,7 @@ if __name__ == "__main__":
     from_block = 19275205
     to_block = 19577604
 
-    label = "./distributions/lisk/LSK_second_batch"
+    label = "./distributions/lisk/2/local"
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
         "0x5E3584d67b86f0C77FB43073A1238a943CA26188",

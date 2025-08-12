@@ -62,23 +62,19 @@ def convert_to_str(value: HexBytes) -> str:
 
 
 if __name__ == "__main__":
-    labels = [
-        "./distributions/lisk/LSK_first_batch",
-        "./distributions/lisk/LSK_second_batch",
-    ]
-    merkle_tree_label = labels[-1]
-    files = [
-        "0x1b10E2270780858923cdBbC9B5423e29fffD1A44.csv",
-        "0x8cf94b5A37b1835D634b7a3e6b1EE02Ce7F0CD30.csv",
-        "0xa67E8B2E43B70D98E1896D3f9d563f3ABdB8Adcd.csv",
+    labels = [f"./distributions/lisk/{i}/external" for i in [1, 2]]
+    merkle_proofs_path = labels[-1].replace("external", "merkle_proofs")
+    vaults = [
+        "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
+        "0x8cf94b5A37b1835D634b7a3e6b1EE02Ce7F0CD30",
+        "0xa67E8B2E43B70D98E1896D3f9d563f3ABdB8Adcd",
     ]
     reward_token = "0xac485391EB2d7D88253a7F1eF18C37f4242D1A24"
 
-    for file_name in files:
+    for vault in vaults:
         data = {}
         for label in labels:
-            path = f"{label}_external_collector"
-            with open(f"{path}/{file_name}", "r") as f:
+            with open(f"{label}/{vault}.csv", "r") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     user = row["user"]
@@ -110,9 +106,9 @@ if __name__ == "__main__":
             ],
         }
 
-        os.makedirs(f"{merkle_tree_label}_merkle_proofs", exist_ok=True)
+        os.makedirs(f"{merkle_proofs_path}", exist_ok=True)
         with open(
-            f"{merkle_tree_label}_merkle_proofs/{file_name.replace('.csv', '.json')}",
+            f"{merkle_proofs_path}/{vault}.json",
             "w",
         ) as f:
             json.dump(data, f, indent=2)
