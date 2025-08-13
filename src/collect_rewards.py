@@ -133,10 +133,10 @@ def calculate_rewards(
 
 
 if __name__ == "__main__":
-    from_block = 19275205
-    to_block = 19577604
+    from_block = 19577605
+    to_block = 19880004
 
-    label = "./distributions/lisk/2/local"
+    label = "./distributions/lisk/3/local"
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
         "0x5E3584d67b86f0C77FB43073A1238a943CA26188",
@@ -149,6 +149,10 @@ if __name__ == "__main__":
                     "0xcf3c93f6FAb70b39F862ceD14A7c84e6aE319328",
                     to_block,
                 ],
+            ),
+            (
+                constants.MORPHO,
+                ["0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8", from_block, to_block],
             ),
         ],
         from_block,
@@ -170,6 +174,10 @@ if __name__ == "__main__":
                     to_block,
                 ],
             ),
+            (
+                constants.MORPHO,
+                ["0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8", from_block, to_block],
+            ),
         ],
         from_block,
         to_block,
@@ -189,8 +197,10 @@ if __name__ == "__main__":
                     to_block,
                 ],
             ),
-            (constants.MORPHO, ["0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8",
-                                from_block, to_block]),
+            (
+                constants.MORPHO,
+                ["0x00cD58DEEbd7A2F1C55dAec715faF8aed5b27BF8", from_block, to_block],
+            ),
         ],
         from_block,
         to_block,
