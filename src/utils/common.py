@@ -8,6 +8,7 @@ import os
 from random import randint
 import time
 from dotenv import load_dotenv
+import json
 
 MULTICALL_ABI = [
     {
@@ -89,6 +90,20 @@ VELO_V3_POOL_ABI = [
         "stateMutability": "view",
         "type": "function",
     },
+    {
+        "inputs": [],
+        "name": "token1",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "tickSpacing",
+        "outputs": [{"internalType": "address", "name": "", "type": "uint24"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
 ]
 VELO_V2_POOL_ABI = [
     {
@@ -128,6 +143,28 @@ w3 = Web3(Web3.HTTPProvider(RPC_URL))
 class DeFiService:
     def __init__(self):
         pass
+
+    def name(self) -> str:
+        return "DeFiService"
+
+    def calculate_distributions_with_logs(
+        self, block_number: int, store_logs: bool = False
+    ) -> Tuple[str, List[Tuple[str, int]]]:
+        (pool, distributions) = self.calculate_distributions(block_number)
+        if store_logs:
+            service_name = self.name()
+            log_directory = f"./logs/{service_name}"
+            os.makedirs(log_directory, exist_ok=True)
+            file_name = f"{log_directory}/{pool}.log"
+
+            with open(file_name, "a") as f:
+                data = {"block_number": block_number, "distribution": {}}
+                for user, balance in self.cached_distributions:
+                    if balance != 0:
+                        data["distribution"][user] = balance
+                f.write(json.dumps(data) + "\n")
+
+        return (pool, distributions)
 
     def calculate_distributions(
         self, block_number: int

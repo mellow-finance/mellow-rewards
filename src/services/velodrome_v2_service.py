@@ -15,23 +15,23 @@ class VelodromeV2Service(DeFiService):
         self.pool = pool
         self.users = users
         self.block_numbers = block_numbers
-        self.cached_block_number = 0
+        self.iterator = 0
         self.cached_distributions = []
+
+    def name(self) -> str:
+        return "VelodromeV2Service"
 
     def calculate_distributions(
         self, block_number: int
     ) -> Tuple[str, List[Tuple[str, int]]]:
-        if block_number < self.cached_block_number:
-            raise Exception("VelodromeV2Service: block_number < cached_block_number")
-        current_index = -1
-        cached_index = -1
-        for i in range(len(self.block_numbers)):
-            if self.cached_block_number >= self.block_numbers[i]:
-                cached_index = i
-            if block_number >= self.block_numbers[i]:
-                current_index = i
-
-        if current_index == -1 or cached_index == current_index:
+        flag = False
+        while (
+            self.iterator < len(self.block_numbers)
+            and self.block_numbers[self.iterator] <= block_number
+        ):
+            self.iterator += 1
+            flag = True
+        if not flag:
             return self.pool, self.cached_distributions
 
         lp_balances, total_supply = get_token_balances_onchain(

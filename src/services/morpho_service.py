@@ -20,6 +20,9 @@ class MorphoService(DeFiService):
         self.cached_block_number = 0
         self.cached_distributions = []
 
+    def name(self) -> str:
+        return "MorphoService"
+
     def calculate_distributions(
         self, block_number: int
     ) -> Tuple[str, List[Tuple[str, int]]]:

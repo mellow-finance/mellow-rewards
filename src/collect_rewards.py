@@ -14,6 +14,7 @@ def calculate_rewards(
     to_block: int,
     reward_amount: int,
     label: str,
+    write_logs: bool = False,
 ) -> None:
     print(f"Collecting vault ({vault}) transfer events...")
     responses = call_blockscout_api(
@@ -47,14 +48,16 @@ def calculate_rewards(
 
     cumulative_balances = {}
     user_balances = {}
-    transfer_iterator = 0
+    iterator = 0
     print("Processing...")
-    for block_number in range(transfers[0]["block_number"], to_block + 1):
+
+    for block_number in range(from_block, to_block + 1):
         while (
-            transfer_iterator < len(transfers)
-            and transfers[transfer_iterator]["block_number"] == block_number
+            iterator < len(transfers)
+            and transfers[iterator]["block_number"] <= block_number
         ):
-            transfer = transfers[transfer_iterator]
+            transfer = transfers[iterator]
+            iterator += 1
             sender = transfer["from"]
             receiver = transfer["to"]
             if sender != ZERO_ADDRESS:
@@ -65,7 +68,6 @@ def calculate_rewards(
                 user_balances[receiver] = (
                     user_balances.get(receiver, 0) + transfer["amount"]
                 )
-            transfer_iterator += 1
 
         if block_number >= from_block:
             run_checks = (
@@ -84,7 +86,9 @@ def calculate_rewards(
 
             defi_pool_shares = {}
             for service in services:
-                defi_pool, distributions = service.calculate_distributions(block_number)
+                defi_pool, distributions = service.calculate_distributions_with_logs(
+                    block_number, write_logs
+                )
                 defi_pool_shares[defi_pool] = distributions
 
             for holder, balance in user_balances.items():

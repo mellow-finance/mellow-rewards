@@ -1,6 +1,7 @@
 from utils.common import *
 
-_CACHE_PATH = './src/services/velodrome_v3_cached_positions.csv'
+_CACHE_PATH = "./src/services/velodrome_v3_cached_positions.csv"
+
 
 class VelodromeV3Service(DeFiService):
     def __init__(
@@ -8,127 +9,123 @@ class VelodromeV3Service(DeFiService):
         w3: Web3,
         vault: str,
         pool: str,
-        positions: Dict[int, Any],
+        gauge: str,
+        users: List[str],
+        token_ids: List[int],
         block_numbers: List[int],
     ):
         self.w3 = w3
         self.vault = vault
         self.pool = pool
-        self.positions = positions
+        self.gauge = gauge
+        self.token_ids = token_ids
+        self.users = users
         self.block_numbers = block_numbers
-        self.cache = dict()
-        self.cached_block_number = 0
         self.cached_distributions = []
-
-    def calculate_distributions(self, block_number: int) -> List[Tuple[str, int]]:
-        if block_number < self.cached_block_number:
-            raise Exception("VelodromeV3Service: block_number < cached_block_number")
-
-        cached_index = -1
-        current_index = -1
-        for i in range(len(self.block_numbers)):
-            if self.cached_block_number >= self.block_numbers[i]:
-                cached_index = i
-            if block_number >= self.block_numbers[i]:
-                current_index = i
-
-        if current_index == -1 or cached_index == current_index:
-            return self.pool, self.cached_distributions
-
-        pool_contract: Contract = self.w3.eth.contract(
-            address=self.pool, abi=VELO_V3_POOL_ABI
+        self.iterator = 0
+        self.pool_contract: Contract = self.w3.eth.contract(
+            address=pool, abi=VELO_V3_POOL_ABI
         )
-        multi_call: Contract = self.w3.eth.contract(
-            address=MULTICALL_ADDRESS, abi=MULTICALL_ABI
-        )
-        token_index = (
+        self.token_index = (
             0
-            if pool_contract.functions.token0().call().lower() == self.vault.lower()
+            if self.pool_contract.functions.token0().call().lower()
+            == self.vault.lower()
             else 1
         )
-        for i in range(cached_index + 1, current_index + 1):
-            block_number = self.block_numbers[i]
+        self.multi_call: Contract = self.w3.eth.contract(
+            address=MULTICALL_ADDRESS, abi=MULTICALL_ABI
+        )
 
-            existing_token_ids = list(
-                filter(
-                    lambda token_id: self.positions[token_id]["mintedAt"]
-                    <= block_number
-                    < self.positions[token_id]["burntAt"],
-                    self.positions.keys(),
-                )
+    def name(self) -> str:
+        return "VelodromeV3Service"
+
+    def calculate_distributions(self, block_number: int) -> List[Tuple[str, int]]:
+        flag = False
+        while (
+            self.iterator < len(self.block_numbers)
+            and self.block_numbers[self.iterator] <= block_number
+        ):
+            flag = True
+            self.iterator += 1
+
+        if not flag:
+            return self.pool, self.cached_distributions
+
+        sqrt_price_x96 = self.pool_contract.functions.slot0().call(
+            block_identifier=block_number
+        )[0]
+
+        # fees + principals + owners
+        calls = []
+        for token_id in self.token_ids:
+            calls.append(
+                [VELO_V3_POSITION_MANAGER, "0x6352211e" + hex(token_id)[2:].zfill(64)]
             )
-            burnt_token_ids = list(
-                filter(
-                    lambda token_id: block_number
-                    >= self.positions[token_id]["burntAt"],
-                    self.positions.keys(),
-                )
+            calls.append(
+                [
+                    SUGAR_ADDRESS,
+                    "0x263a5362"
+                    + VELO_V3_POSITION_MANAGER[2:].lower().zfill(64)
+                    + hex(token_id)[2:].zfill(64),
+                ]
             )
-
-            for token_id in burnt_token_ids:
-                del self.positions[token_id]
-
-            sqrt_price_x96 = pool_contract.functions.slot0().call(
-                block_identifier=block_number
-            )[0]
-
-            # fees + principals
-            calls = []
-            for token_id in existing_token_ids:
-                calls.append(
-                    [
-                        SUGAR_ADDRESS,
-                        "0x263a5362"
-                        + VELO_V3_POSITION_MANAGER[2:].lower().zfill(64)
-                        + hex(token_id)[2:].zfill(64),
-                    ]
-                )
-                calls.append(
-                    [
-                        SUGAR_ADDRESS,
-                        "0x22635397"
-                        + VELO_V3_POSITION_MANAGER[2:].lower().zfill(64)
-                        + hex(token_id)[2:].zfill(64)
-                        + hex(sqrt_price_x96)[2:].zfill(64),
-                    ]
-                )
-
-            responses = multi_call.functions.tryAggregate(False, calls).call(
-                block_identifier=block_number
+            calls.append(
+                [
+                    SUGAR_ADDRESS,
+                    "0x22635397"
+                    + VELO_V3_POSITION_MANAGER[2:].lower().zfill(64)
+                    + hex(token_id)[2:].zfill(64)
+                    + hex(sqrt_price_x96)[2:].zfill(64),
+                ]
             )
 
-            for index in range(len(existing_token_ids)):
-                fee_response = responses[index * 2]
-                principal_response = responses[index * 2 + 1]
-                token_id = existing_token_ids[index]
-                if not fee_response[0] or not principal_response[0]:
-                    raise Exception(
-                        "VelodromeV3Service: SugarHeler call fails at tokenId={}, blockNumber={}".format(
-                            token_id,
-                            block_number,
-                        )
+        for account in self.users:
+            calls.append([self.gauge, "0x4b937763" + account[2:].zfill(64)])
+
+        responses = self.multi_call.functions.tryAggregate(False, calls).call(
+            block_identifier=block_number
+        )
+
+        owner_of_staked = {}
+        for i, user in enumerate(self.users):
+            response = responses[i + len(self.token_ids) * 3]
+            if not response[0]:
+                continue
+            staked_token_ids = decode(["uint256[]"], response[1])
+            for token_ids in staked_token_ids:
+                for token_id in token_ids:
+                    owner_of_staked[token_id] = user
+
+        balances = {}
+        for index, token_id in enumerate(self.token_ids):
+            owner_response = responses[index * 3]
+            if not owner_response[0]:
+                # nft does not exist
+                continue
+
+            fee_response = responses[index * 3 + 1]
+            principal_response = responses[index * 3 + 2]
+            if not fee_response[0] or not principal_response[0]:
+                raise Exception(
+                    "VelodromeV3Service: SugarHeler call fails at tokenId={}, blockNumber={}".format(
+                        token_id,
+                        block_number,
                     )
-                fees = decode(["uint256", "uint256"], fee_response[1])
-                principals = decode(["uint256", "uint256"], principal_response[1])
-                self.positions[token_id]["balance"] = (
-                    fees[token_index] + principals[token_index]
                 )
+            fees = decode(["uint256", "uint256"], fee_response[1])
+            principals = decode(["uint256", "uint256"], principal_response[1])
+            amount = fees[self.token_index] + principals[self.token_index]
+            owner = Web3.to_checksum_address(decode(["address"], owner_response[1])[0])
+            if owner == self.gauge:
+                owner = owner_of_staked[token_id]
+            if owner not in balances:
+                balances[owner] = 0
+            balances[owner] += amount
 
-            # owner transfers
-            for token_id in self.positions:
-                position = self.positions[token_id]
-                transfers = position["transfers"]
-                if transfers and block_number in transfers:
-                    self.positions[token_id]["owner"] = transfers[block_number]
-
-        self.cached_block_number = block_number
         self.cached_distributions = list(
             filter(
                 lambda item: item[1] > 0,
-                [
-                    (position["owner"], position["balance"])
-                    for position in self.positions.values()
-                ],
+                [(user, int(balance)) for user, balance in balances.items()],
             )
         )
         return self.pool, self.cached_distributions
@@ -337,7 +334,7 @@ def create_velodrome_v3_service(
     pool: str,
     gauge: str,
     to_block: int,
-) -> Dict[int, Any]:
+) -> DeFiService:
     cache = {}
     pool_events: List[Any] = call_blockscout_api(
         f"https://blockscout.lisk.com/api/v2/addresses/{pool}/logs"
@@ -346,39 +343,30 @@ def create_velodrome_v3_service(
     all_positions: Dict[int, Any] = load_all_positions(
         w3, cache, block_numbers[0], to_block
     )
-    positions = {}
-    for token_id in all_positions:
-        position = all_positions[token_id]
+    pool_contract = w3.eth.contract(address=pool, abi=VELO_V3_POOL_ABI)
+    pool_token0 = pool_contract.functions.token0().call().lower()
+    pool_token1 = pool_contract.functions.token1().call().lower()
+    pool_tick_spacing = pool_contract.functions.tickSpacing().call()
+    token_ids = set()
+    for token_id, position in all_positions.items():
         if (
-            position["token0"].lower() != vault.lower()
-            and position["token1"].lower() != vault.lower()
+            position["token0"].lower() != pool_token0
+            or position["token1"].lower() != pool_token1
+            or int(position["tickSpacing"]) != int(pool_tick_spacing)
         ):
             continue
-        positions[token_id] = position
+        token_ids.add(token_id)
 
-    for token_id in positions:
+    users = set()
+    for token_id in token_ids:
         transfers = call_blockscout_api(
             f"https://blockscout.lisk.com/api/v2/tokens/{VELO_V3_POSITION_MANAGER}/instances/{token_id}/transfers"
         )
-
-        ownership_transfers = {}
         for transfer in transfers:
-            sender = transfer["from"]["hash"]
-            receiver = transfer["to"]["hash"]
-            block_number = int(transfer["block_number"])
-            block_numbers.append(block_number)
-            if receiver == gauge:
-                ownership_transfers[block_number] = sender
-            else:
-                ownership_transfers[block_number] = receiver
-        burnt_at = to_block
-        if transfers[-1]["to"]["hash"] == ZERO_ADDRESS:
-            burnt_at = transfers[-1]["block_number"]
+            users.add(transfer["from"]["hash"])
+            users.add(transfer["to"]["hash"])
+            block_numbers.append(int(transfer["block_number"]))
 
-        positions[token_id]["owner"] = ZERO_ADDRESS
-        positions[token_id]["balance"] = 0
-        positions[token_id]["mintedAt"] = int(transfers[0]["block_number"])
-        positions[token_id]["burntAt"] = int(burnt_at)
-        positions[token_id]["transfers"] = ownership_transfers
+    users = sorted(list(users))
     block_numbers = sorted(list(set(block_numbers)))
-    return VelodromeV3Service(w3, vault, pool, positions, block_numbers)
+    return VelodromeV3Service(w3, vault, pool, gauge, users, token_ids, block_numbers)
