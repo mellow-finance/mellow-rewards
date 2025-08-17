@@ -6,8 +6,6 @@ labels = [f"distributions/lisk/{i}" for i in [1, 2, 3]]
 
 for label in labels:
     for file_name in os.listdir(f"./{label}/local/"):
-        if not file_name.startswith("0xa67E8B2E43B70D98E1896D3f9d563f3ABdB8Adcd"):
-            continue
         max_error = 0
         cumulative_error = 0
         rewards = {}

@@ -62,7 +62,7 @@ def convert_to_str(value: HexBytes) -> str:
 
 
 if __name__ == "__main__":
-    labels = [f"./distributions/lisk/{i}/external" for i in [1, 2]]
+    labels = [f"./distributions/lisk/{i}/external" for i in [1, 2, 3]]
     merkle_proofs_path = labels[-1].replace("external", "merkle_proofs")
     vaults = [
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
