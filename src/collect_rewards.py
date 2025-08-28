@@ -137,10 +137,10 @@ def calculate_rewards(
 
 
 if __name__ == "__main__":
-    from_block = 20182405
-    to_block = 20484804
+    from_block = 20484805
+    to_block = 20787204
 
-    label = "./distributions/lisk/5/local"
+    label = "./distributions/lisk/6/local"
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
         "0x5E3584d67b86f0C77FB43073A1238a943CA26188",
