@@ -2,7 +2,7 @@ import csv
 import os
 
 
-labels = [f"distributions/lisk/{i}" for i in [1, 2, 3, 4]]
+labels = [f"distributions/lisk/{i}" for i in [1, 2, 3, 4, 5]]
 
 for label in labels:
     for file_name in os.listdir(f"./{label}/local/"):

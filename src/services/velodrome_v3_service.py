@@ -369,4 +369,9 @@ def create_velodrome_v3_service(
 
     users = sorted(list(users))
     block_numbers = sorted(list(set(block_numbers)))
+    print(block_numbers)
+    print(users)
+    print(token_ids)
+    print(vault, pool, gauge)
+    exit(0)
     return VelodromeV3Service(w3, vault, pool, gauge, users, token_ids, block_numbers)
