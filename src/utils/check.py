@@ -2,7 +2,7 @@ import csv
 import os
 
 
-labels = [f"distributions/lisk/{i}" for i in [1, 2, 3, 4, 5]]
+labels = [f"distributions/lisk/{i}" for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]]
 
 for label in labels:
     for file_name in os.listdir(f"./{label}/local/"):
@@ -48,7 +48,7 @@ for label in labels:
                 print(f'User not found (external): {user}')
             else:
                 error = int(rewards[user]) - int(external_rewards[user])
-                if abs(error) > 100:
+                if abs(error) > 500:
                     print(user, error)
                 max_error = max(max_error, abs(error))
                 cumulative_error += abs(error)

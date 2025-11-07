@@ -105,7 +105,8 @@ def collect_morpho_events(morpho: str):
 
 
 def create_morpho_service(
-    w3: Web3, vault: str, morpho: str, from_block: int, to_block: int
+    w3: Web3, vault: str, 
+    block_numbers_with_transfers: List[int],morpho: str, from_block: int, to_block: int
 ):
     data = collect_morpho_events(morpho)
 

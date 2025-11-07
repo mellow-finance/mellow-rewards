@@ -41,10 +41,15 @@ def calculate_rewards(
         constants.MORPHO: create_morpho_service,
     }
 
+    block_numbers = set()
+    for transfer in transfers:
+        block_numbers.add(transfer['block_number'])
+
     print("Creating services...")
     services: List[DeFiService] = []
     for service_type, service_data in service_init_params:
-        services.append(service_mapping[service_type](w3, vault, *service_data))
+        print(service_type)
+        services.append(service_mapping[service_type](w3, vault, block_numbers, *service_data))
 
     cumulative_balances = {}
     user_balances = {}
@@ -97,6 +102,8 @@ def calculate_rewards(
                     total_defi_shares = sum(
                         [defi_shares for _, defi_shares in distributions]
                     )
+                    if total_defi_shares == 0:
+                        continue
                     for defi_user, defi_shares in distributions:
                         if defi_user not in cumulative_balances:
                             cumulative_balances[defi_user] = 0
@@ -137,10 +144,13 @@ def calculate_rewards(
 
 
 if __name__ == "__main__":
-    from_block = 20182405
-    to_block = 20484804
+    blocks_per_week = 3600 * 24 * 7 // 2
+    offset = 7
 
-    label = "./distributions/lisk/5/local"
+    from_block = 20182405 + offset * blocks_per_week
+    to_block = 20484804 + offset * blocks_per_week
+
+    label = f"./distributions/lisk/{5 + offset}/local"
     calculate_rewards(
         "0x1b10E2270780858923cdBbC9B5423e29fffD1A44",
         "0x5E3584d67b86f0C77FB43073A1238a943CA26188",
@@ -151,6 +161,7 @@ if __name__ == "__main__":
                 [
                     "0x9788ABD076014dE9c04A2283c709BfF7778a6cF1",
                     "0xcf3c93f6FAb70b39F862ceD14A7c84e6aE319328",
+                    from_block,
                     to_block,
                 ],
             ),
@@ -175,6 +186,7 @@ if __name__ == "__main__":
                 [
                     "0x9665Df2b69163411D9b089F6C192F8CeB579FB57",
                     "0x7a0CA233A1599a1b1d23563326a4C560Ef1f4B33",
+                    from_block,
                     to_block,
                 ],
             ),
@@ -198,6 +210,7 @@ if __name__ == "__main__":
                 [
                     "0xFF457eFE9A906CB4af830C22c2B36f15a9a77619",
                     "0xD3AD131b12699c464dFD461a5FcE225F2C2e410b",
+                    from_block,
                     to_block,
                 ],
             ),

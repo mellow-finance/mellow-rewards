@@ -55,7 +55,9 @@ class VelodromeV2Service(DeFiService):
         return self.pool, self.cached_distributions
 
 
-def create_velodrome_v2_service(w3: Web3, vault: str, pool: str) -> VelodromeV2Service:
+def create_velodrome_v2_service(
+    w3: Web3, vault: str, _: List[int], pool: str
+) -> VelodromeV2Service:
     responses = call_blockscout_api(
         f"https://blockscout.lisk.com/api/v2/addresses/{pool}/logs"
     )

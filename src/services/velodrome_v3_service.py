@@ -209,26 +209,12 @@ def get_onchain_positions(
     return positions
 
 
-def get_minting_block_number(
-    w3: Web3, cache: Dict[int, int], from_block: int, to_block: int, token_id: int
-) -> int:
-    left = from_block
-    right = to_block
-    mid = 0
-    answer = right
-    while left <= right:
-        mid = (left + right) >> 1
-        next_token_id = get_next_token_id_at(w3, cache, mid)
-        if next_token_id > token_id:
-            answer = mid
-            right = mid - 1
-        else:
-            left = mid + 1
-    return answer
-
-
 def load_all_positions(
-    w3: Web3, cache: Dict[int, int], from_block: int, to_block: int
+    w3: Web3,
+    cache: Dict[int, int],
+    from_block: int,
+    to_block: int,
+    potential_block_numbers: Set[int],
 ) -> Dict[int, Any]:
     positions = {}
 
@@ -252,7 +238,7 @@ def load_all_positions(
     collected_onchain_positions = get_onchain_positions(
         multi_call,
         sorted(
-            list(set([randint(from_block, to_block) for _ in range(50)] + [to_block]))
+            list(set([randint(from_block, to_block) for _ in range(10)] + [to_block]))
         ),
         missing_token_ids,
     )
@@ -262,41 +248,23 @@ def load_all_positions(
             missing_token_ids.remove(token_id)
             positions[token_id] = collected_onchain_positions[token_id]
 
-    missing_token_ids = sorted(list(missing_token_ids))
-    missing_token_ids_iterator = 0
-    while missing_token_ids_iterator < len(missing_token_ids):
-        print(
-            "Processing {}/{}...".format(
-                missing_token_ids_iterator + 1, len(missing_token_ids)
-            )
-        )
-        block_number = get_minting_block_number(
-            w3,
-            cache,
-            from_block,
-            to_block,
-            missing_token_ids[missing_token_ids_iterator],
-        )
-        calls = []
+    missing_token_ids = set(missing_token_ids)
+    potential_block_numbers = sorted(list(potential_block_numbers))
 
+    for itr, block_number in enumerate(potential_block_numbers):
+        print(f"{itr}/{len(potential_block_numbers)}. left: {len(missing_token_ids)}")
+        if not missing_token_ids:
+            break
+        calls = []
         call_token_ids = []
-        for token_id in range(
-            get_next_token_id_at(w3, cache, block_number - 1),
-            get_next_token_id_at(w3, cache, block_number),
-        ):
-            if missing_token_ids_iterator == len(missing_token_ids):
-                break
-            if token_id == missing_token_ids[missing_token_ids_iterator]:
-                calls.append(
-                    [
-                        VELO_V3_POSITION_MANAGER,
-                        "0x99fbab88" + hex(token_id)[2:].zfill(64),
-                    ]
-                )
-                call_token_ids.append(token_id)
-                missing_token_ids_iterator += 1
-        if not calls:
-            continue
+        for token_id in missing_token_ids:
+            calls.append(
+                [
+                    VELO_V3_POSITION_MANAGER,
+                    "0x99fbab88" + hex(token_id)[2:].zfill(64),
+                ]
+            )
+            call_token_ids.append(token_id)
         responses = multi_call.functions.tryAggregate(False, calls).call(
             block_identifier=block_number
         )
@@ -304,13 +272,7 @@ def load_all_positions(
             token_id = call_token_ids[index]
             if response[0]:
                 positions[token_id] = convert_positions_response(token_id, response[1])
-            else:
-                positions[token_id] = {
-                    "tokenId": token_id,
-                    "token0": ZERO_ADDRESS,
-                    "token1": ZERO_ADDRESS,
-                    "tickSpacing": 0,
-                }
+                missing_token_ids.remove(token_id)
 
     with open(_CACHE_PATH, "w") as f:
         writer = csv.writer(f)
@@ -331,8 +293,10 @@ def load_all_positions(
 def create_velodrome_v3_service(
     w3: Web3,
     vault: str,
+    block_numbers_with_transfers: List[int],
     pool: str,
     gauge: str,
+    from_block: int,
     to_block: int,
 ) -> DeFiService:
     cache = {}
@@ -340,8 +304,15 @@ def create_velodrome_v3_service(
         f"https://blockscout.lisk.com/api/v2/addresses/{pool}/logs"
     )
     block_numbers: List[int] = [int(event["block_number"]) for event in pool_events]
+
+    potential_block_numbers = set(block_numbers_with_transfers) & set(block_numbers)
+
+    for block_number in [*potential_block_numbers]:
+        if block_number < block_numbers[0] or block_number < from_block or block_number > to_block:
+            potential_block_numbers.remove(block_number)
+
     all_positions: Dict[int, Any] = load_all_positions(
-        w3, cache, block_numbers[0], to_block
+        w3, cache, block_numbers[0], to_block, potential_block_numbers
     )
     pool_contract = w3.eth.contract(address=pool, abi=VELO_V3_POOL_ABI)
     pool_token0 = pool_contract.functions.token0().call().lower()
@@ -369,9 +340,4 @@ def create_velodrome_v3_service(
 
     users = sorted(list(users))
     block_numbers = sorted(list(set(block_numbers)))
-    print(block_numbers)
-    print(users)
-    print(token_ids)
-    print(vault, pool, gauge)
-    exit(0)
     return VelodromeV3Service(w3, vault, pool, gauge, users, token_ids, block_numbers)
